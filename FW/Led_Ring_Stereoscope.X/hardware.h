@@ -19,19 +19,33 @@
 /* METHODS */
 /***********/
 void initHardware( void ); 
+void initPins( void );
 void initPPS( void );
 void initOscillator( void );
 void initInterrupts (void);
 void InitU1(void);
 void initTimer1( void );
+void initTimer2( void );
 
 /***********/
 /* DEFINES */
 /***********/
+
+/* General defines */
 #define    INPUT_PIN        1
 #define    OUTPUT_PIN       0
 #define    DIGITAL          0
 #define    ANALOG           1
+
+/* GPIO */
+#define RotPush             PORTAbits.RA7       // Pushbutton on the rotary encoder
+#define RotPush_SetDigIn()  _TRISA7=INPUT_PIN           // Set as input
+#define RotA                PORTBbits.RB14
+#define RotA_SetDigIn()     _TRISB14 = INPUT_PIN
+#define RotA_SetDig()       _ANSB14 = DIGITAL
+#define RotB                PORTAbits.RA10
+#define RotB_SetDigIn()     _TRISA10 = INPUT_PIN
+
 
 /* UART */
 #define U1_Tx_SetDigOut()           _TRISB10=0
@@ -46,14 +60,14 @@ void initTimer1( void );
 #define TP1_SetDigOut()        _TRISB8 = 0
 
 /* LEDS */
-#define LED_Green_SetDigOut()           _TRISB7 = 0
 #define LED_Green                       _LATB7
+#define LED_Green_SetDigOut()           _TRISB7 = 0
 #define LED_Green_SetHigh()             _LATB7 = 1
 #define LED_Green_SetLow()              _LATB7 = 0
 #define LED_Green_Toggle()              _LATB7 ^= 1
 
-#define LED_Red_SetDigOut()           _TRISB6 = 0
 #define LED_Red                       _LATB6
+#define LED_Red_SetDigOut()           _TRISB6 = 0
 #define LED_Red_SetHigh()             _LATB6 = 1
 #define LED_Red_SetLow()              _LATB6 = 0
 #define LED_Red_Toggle()              _LATB6 ^= 1
@@ -64,8 +78,7 @@ void initTimer1( void );
 #define LED_Heartbeat_Toggle()           _LATB13 ^= 1
 #define LED_Heartbeat_SetDigOut()        _TRISB13 = 0
 
-#define StartWDT()                  RCONbits.SWDTEN = 0x01;    // Start Software WDT (512ms for PRE = POSTscaler = 128)
-
+#define StartWDT()              RCONbits.SWDTEN = 0x01;    // Start Software WDT (512ms for PRE = POSTscaler = 128)
 
 typedef unsigned int            UINT;
 typedef unsigned char           UINT8;

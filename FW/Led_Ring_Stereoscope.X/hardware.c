@@ -10,11 +10,20 @@
 
 void initHardware( void ){
     
+    initPins();
     initPPS();
     initOscillator();
     initInterrupts();
     InitU1();
     initTimer1();
+    initTimer2();
+}
+
+void initPins( void ){
+    RotPush_SetDigIn();
+    RotA_SetDig();
+    RotA_SetDigIn();
+    RotB_SetDigIn();
 
     /* TP */    
     TP1_SetDigOut();
@@ -59,6 +68,8 @@ void initOscillator( void ){
     //REFOTRIML = 0x0000;
 }
 void initInterrupts (void) {
+    /* Enable interrupts */
+    IEC1bits.CNIE = 1;    // Interrupt on change enabled
     /* Set priority for interrupts: Rx 1, Tx and Timers 2 */
     IPC3bits.U1TXIP = 2;  //    UTXI: U1TX - UART1 Transmitter    Priority: 2
     IPC2bits.U1RXIP = 1;  //    URXI: U1RX - UART1 Receiver     Priority: 1
@@ -113,4 +124,16 @@ void initTimer1( void ){
     
     IEC0bits.T1IE = true;    // Enable the interrupt
     T1CONbits.TON = 1;       // Start Timer
+}
+
+void initTimer2( void ){
+    // Reset timer2 to 0 
+    TMR2 = 0x000;
+    //Period around 2ms
+    PR2 = 0xBB;
+    //T2CON
+    T2CON = 0x20;
+    
+    IEC0bits.T2IE = true;   // Enable the interrupt
+    T2CONbits.TON = 1;      // Start the timer
 }

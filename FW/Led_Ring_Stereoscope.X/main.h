@@ -53,6 +53,9 @@ typedef union
     } bits;
 } BYTE_VAL, BYTE_BITS;
 
+
+bool check_inputs (void);
+
 #ifdef	__cplusplus
 extern "C" {
 #endif /* __cplusplus */
