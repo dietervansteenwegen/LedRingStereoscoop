@@ -63,6 +63,10 @@ unsigned int TempCounter = 0x0;
 bool FlagT2Expired = false;  // Flag to run the debouncing routine
 bool RotPush_GoneHigh, RotPush_GoneLow, RotA_GoneHigh, RotA_GoneLow, RotB_GoneHigh, RotB_GoneLow = false;
 bool RotCC = false;
+bool Rotated_CCW = false;
+bool Rotated_CW = false;
+unsigned char RotSM = 2;
+unsigned char RotSM_OLD = 2;
 
 void __attribute__ ( ( interrupt, no_auto_psv ) ) _U1TXInterrupt ( void ){ 
     IFS0bits.U1TXIF = false;
@@ -136,10 +140,8 @@ void __attribute__ ( ( interrupt, no_auto_psv ) ) _T2Interrupt (  ){
 
 bool check_inputs ( void ){     // checks status of inputs, returns true if anything has changed
     bool InputChanged = false;
-    static char bitmask = 0b11111;
+    static char bitmask = 0b11111;      // Only care about the 5 least significant digits
     static unsigned char RotA_State, RotB_State, RotPush_State; // Debounce "map" for RotA, RotB and RotPush
-    static unsigned char RotSM = 2;
-    static unsigned char RotSM_OLD = 2;
     
     /* RotPush */
     RotPush_State = (((RotPush_State<<1) + RotPush) & bitmask);
@@ -175,26 +177,50 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
              *  add current state at the right,
                 then mask to leave only last 5 digits
              */ 
-    if (( RotA_State == 0b10000)||( !RotA_State == 0b10000)){
+    if (( RotA_State == 0b10000)|( !RotA_State == 0b10000)){
         RotSM += 1;
     }
     
     /* RotB */
     RotB_State = (((RotB_State<<1) + RotB) & bitmask);
-    if (( RotB_State == 0b10000)||( !RotB_State == 0b10000)){
+    if (( RotB_State == 0b10000)|( !RotB_State == 0b10000)){
         RotSM -= 1;
     }
 
+    /* If the SM has changed, check the status */
     if (RotSM != RotSM_OLD){
         switch (RotSM){
-            case 0:     // B has toggled two times in a row, so is back at original position without passing an indent
+            case 0:     
+                // B has toggled two times in a row, so is back at original position without passing an indent
                 RotSM = 2;
-            case 1:     // B has toggled, A not yet
-                continue;
-            case 2:     // Both have toggled, so position has changed. 
-                continue;
-               
+                break;
+            case 1:     
+                // B has toggled, A not yet
+                break;
+            case 2:     
+                // Both have toggled, so position has changed.
+                // OR RotSM was 0 or 4, in which case nothing should happen
+                if(RotSM_OLD == 1){
+                    InputChanged = true;
+                    Rotated_CCW = true;
+                }
+                if(RotSM_OLD == 3){
+                    InputChanged = true;
+                    Rotated_CW = true;
+                }
+            case 3:
+                // A has toggled, B not yet
+                break;
+            case 4:
+                // A toggled two times, so back at orig. position. Reset to state 2
+                RotSM = 2;
+                break;
+            default:
+                // Another value, shouldn't happen so reset
+                RotSM = 2;
+                break;
         }
+    }
     
     if (InputChanged){
         return true;
@@ -221,51 +247,35 @@ int main(void) {
     /*Main loop*/
     while(1){
         ClrWdt();
-        if (RotB == 1){
-            LED_Red_SetHigh();
-        }else{
-            LED_Red_SetLow();
-        }
-        
+                
         if (FlagT2Expired == true){     // 2ms have passed
             FlagT2Expired = false;
             if (check_inputs()){
+                
                 /* First check pushbutton*/
                 if (RotPush_GoneHigh){
-                    LED_Green_SetHigh();
+                    LED_Red_SetLow();
+                    LED_Green_SetLow();
                     RotPush_GoneHigh = false;
                 }
-                
                 if (RotPush_GoneLow) {
+                    LED_Red_SetLow();
                     LED_Green_SetLow();
                     RotPush_GoneLow = false;
                 }
-                /* Then check rotary encoder */
                 
-                if (RotAorB_Changed){
-                    nop;
+                /* Then check rotary encoder */
+                if (Rotated_CCW){
+                    LED_Red_SetHigh();
+                    Rotated_CCW = false;
                 }
-                if (RotA != RotB){
-                    /* Not at an indent, so wait, but check direction */
-                    if (RotA){
-                        RotCC = true;
-                    }else{
-                        RotCC = false;
-                    }
-                }else{
-                    /* Encoder is at an indent */
-                    if (RotCC){
-                        LED_Red_SetHigh();
-                        LED_Green_SetLow();
-                    }else{
-                        LED_Red_SetLow();
-                        LED_Green_SetHigh();
-                    }
-                    
+                if (Rotated_CW){
+                    LED_Green_SetHigh();
+                    Rotated_CW = false;
                 }
             }
             
         }
     }
-    return 1;
+return 1;
 }

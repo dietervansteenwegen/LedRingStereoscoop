@@ -3,12 +3,10 @@
 #ifndef UART_H
 #define	UART_H
 
-#include <xc.h> // include processor files - each processor file is guarded.  
-#include <math.h>
+#include <xc.h> // include processor files - each processor file is guarded.
 #include <string.h>
 #include <stdlib.h>
 #include "hardware.h"
-#include <time.h>
 
 void Uart1SendString(char *buffer );
 void Uart1SendChar(char ch);
