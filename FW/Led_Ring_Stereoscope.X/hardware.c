@@ -8,7 +8,7 @@
 #include <xc.h>
 #include "hardware.h"
 
-void initHardware( void ){
+void init_hardware( void ){
     
     initPins();
     initPPS();
@@ -110,7 +110,7 @@ void InitU1(void){
    if (RCONbits.WDTO){
        Uart1SendString("---Reset by WDT---\r");
    }
-   Uart1SendString("---Init UART1 completed---\r");
+   Uart1SendString("---Init UART1 completed in init---\r");
 }
 
 void initTimer1( void ){

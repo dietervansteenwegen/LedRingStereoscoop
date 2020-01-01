@@ -53,7 +53,7 @@ typedef union
     } bits;
 } BYTE_VAL, BYTE_BITS;
 
-
+void start_routine (void);
 bool check_inputs (void);
 
 #ifdef	__cplusplus

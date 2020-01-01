@@ -18,7 +18,7 @@
 /***********/
 /* METHODS */
 /***********/
-void initHardware( void ); 
+void init_hardware( void ); 
 void initPins( void );
 void initPPS( void );
 void initOscillator( void );

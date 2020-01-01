@@ -51,6 +51,8 @@
 #include <xc.h>
 #include "main.h"
 
+
+
 /* Variables for the heartbeat LED
    PWM cycle is 936 steps, so full off - full on cycle takes
    (936/7)*0.01s = 0.85s */
@@ -67,6 +69,7 @@ bool Rotated_CCW = false;
 bool Rotated_CW = false;
 unsigned char RotSM = 2;
 unsigned char RotSM_OLD = 2;
+unsigned char i = 0;            // counter for for loop
 
 void __attribute__ ( ( interrupt, no_auto_psv ) ) _U1TXInterrupt ( void ){ 
     IFS0bits.U1TXIF = false;
@@ -138,6 +141,21 @@ void __attribute__ ( ( interrupt, no_auto_psv ) ) _T2Interrupt (  ){
 
 }
 
+void start_routine ( void ){
+        /* Blink ALL led's for 2 second to indicate reboot */
+    #define    FCY    8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
+    #include <libpic30.h>           // has __delay_ms() function
+    LED_Red_SetHigh();
+    LED_Heartbeat_SetHigh();
+    LED_Green_SetHigh();
+    for (i=0;i<11;i++){
+        LED_Red_Toggle();
+        LED_Green_Toggle();
+        LED_Heartbeat_Toggle();
+        __delay_ms(100);  
+    }
+}
+
 bool check_inputs ( void ){     // checks status of inputs, returns true if anything has changed
     bool InputChanged = false;
     static char bitmask = 0b11111;      // Only care about the 5 least significant digits
@@ -170,25 +188,29 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
      * |_______|____________________________________________|
      * 
      */
-    
+
+    RotSM_OLD = RotSM;
     /* RotA */
     RotA_State = (((RotA_State<<1) + RotA) & bitmask);
             /* Shift previous values to the left, 
              *  add current state at the right,
                 then mask to leave only last 5 digits
              */ 
-    if (( RotA_State == 0b10000)|( !RotA_State == 0b10000)){
+    if (( RotA_State == 0b10000)||( RotA_State == 0b01111)){
         RotSM += 1;
     }
     
     /* RotB */
     RotB_State = (((RotB_State<<1) + RotB) & bitmask);
-    if (( RotB_State == 0b10000)|( !RotB_State == 0b10000)){
+    if (( RotB_State == 0b10000)||( RotB_State == 0b01111)){
         RotSM -= 1;
     }
 
     /* If the SM has changed, check the status */
     if (RotSM != RotSM_OLD){
+        Uart1SendChar(RotSM + 0x30);
+        Uart1SendChar(0x0D);
+        
         switch (RotSM){
             case 0:     
                 // B has toggled two times in a row, so is back at original position without passing an indent
@@ -234,11 +256,8 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
 int main(void) {
     
     /*Initialize*/
-    initHardware();         // Init all the hardware components
-    LED_Red_SetHigh();
-    #define    FCY    8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
-    #include <libpic30.h> 
-    __delay_ms(1000);  
+    init_hardware();         // Init all the hardware components
+    start_routine();         // blink leds
     StartWDT();
 
 
@@ -254,23 +273,23 @@ int main(void) {
                 
                 /* First check pushbutton*/
                 if (RotPush_GoneHigh){
+                    RotPush_GoneHigh = false;
                     LED_Red_SetLow();
                     LED_Green_SetLow();
-                    RotPush_GoneHigh = false;
                 }
                 if (RotPush_GoneLow) {
+                    RotPush_GoneLow = false;
                     LED_Red_SetLow();
                     LED_Green_SetLow();
-                    RotPush_GoneLow = false;
                 }
                 
                 /* Then check rotary encoder */
                 if (Rotated_CCW){
-                    LED_Red_SetHigh();
+                    LED_Red_Toggle();
                     Rotated_CCW = false;
                 }
                 if (Rotated_CW){
-                    LED_Green_SetHigh();
+                    LED_Green_Toggle();
                     Rotated_CW = false;
                 }
             }
