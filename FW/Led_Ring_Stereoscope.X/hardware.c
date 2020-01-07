@@ -33,6 +33,13 @@ void initPins( void ){
     LED_Red_SetDigOut();
     LED_Green_SetDigOut();
     LED_Heartbeat_SetDigOut();
+    
+    /* CHARGING PIN */
+    Charging_SetDig();
+    Charging_SetDigIn();
+    
+    
+
 }
 
 void initPPS( void ){

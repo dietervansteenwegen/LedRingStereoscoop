@@ -45,6 +45,9 @@ void initTimer2( void );
 #define RotA_SetDig()       _ANSB14 = DIGITAL
 #define RotB                PORTAbits.RA10
 #define RotB_SetDigIn()     _TRISA10 = INPUT_PIN
+#define Charging            PORTBbits.RB2
+#define Charging_SetDigIn() _TRISB2 = INPUT_PIN
+#define Charging_SetDig()   _ANSB2 = DIGITAL
 
 
 /* UART */
