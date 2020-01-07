@@ -21,11 +21,13 @@
 void init_hardware( void ); 
 void initPins( void );
 void initPPS( void );
+void initAdc (void);
 void initOscillator( void );
 void initInterrupts (void);
 void InitU1(void);
 void initTimer1( void );
 void initTimer2( void );
+unsigned int sampleBatt( void );
 
 /***********/
 /* DEFINES */

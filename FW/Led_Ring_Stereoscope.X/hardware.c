@@ -60,6 +60,50 @@ void initPPS( void ){
     
     __builtin_write_OSCCONL(OSCCON | 0x40); // Special command to lock PPS
 }
+
+void initAdc (void){
+      /* Battery is connected through voltage divider (xxxR to batt, xxxR to GND) to pin RC1/AN11.
+        Pin is initialised in initPins function. */
+    
+    /* ADC input */
+    _ANSC1 = 1;
+    _TRISC1 = 1;
+    
+    AD1CON1bits.ADON = 0;
+    AD1CON1bits.ADSIDL = 0;     //Continues operation in idle mode
+    AD1CON1bits.DMABM = 0;      // Not used since not using DMA
+    AD1CON1bits.DMAEN = 0;      // No extended features
+    AD1CON1bits.MODE12 = 1;     // 12 bit operation
+    AD1CON1bits.FORM = 0;       // Absolute decimal, unsigned, right justified
+    AD1CON1bits.SSRC = 0;       // Clear SAMP bit to start conversion
+    AD1CON1bits.ASAM = 0;       // Sample when SAMP is set manually
+    AD1CON1bits.SAMP = 0;       // Don't sample yet
+    AD1CON1bits.DONE = 0;       // no conversion yet
+    
+    AD1CON2bits.PVCFG = 0;      // Use AVdd as pos volt ref
+    AD1CON2bits.NVCFG0 = 0;     // Use AVss as neg voltage ref
+    AD1CON2bits.OFFCAL = 0;     // inputs are connected to normal inputs
+    AD1CON2bits.BUFREGEN = 0;   // Buffer register is used as FIFO
+    AD1CON2bits.CSCNA = 0;      // No scanning
+    AD1CON2bits.BUFS = 0;       // Not used since BUFM = 0
+    AD1CON2bits.SMPI = 0;       // Interrupt at completion of each sample (no interrupt needed)
+    AD1CON2bits.BUFM = 0;       // Start filling buffer at ADC1BUF0
+    AD1CON2bits.ALTS = 0;       // Always use Sample A
+    
+    AD1CON3bits.ADRC = 0;       // Clock derived from system clock
+    AD1CON3bits.PUMPEN = 0;     // Charge pump is disabled
+    AD1CON3bits.SAMC = 0;       // Auto sample is 0Tad (not used)
+    AD1CON3bits.ADCS = 0b10;    // Tad = 4xTcy
+    
+    //AD1CON4 is used to configure DMA
+    //AD1CON5 is used for Threshold detect
+    AD1CHS = 0xB;                // select AN11/PORTC1 as POS inp, Vss as neg for CHAN A
+
+    AD1CON1bits.ADON = 1;        // turn ADC ON
+    
+}
+
+
 void initOscillator( void ){
     // CF no clock failure; NOSC FRCPLL; SOSCEN enabled; POSCEN disabled; CLKLOCK unlocked; OSWEN Switch is Complete; IOLOCK not-active; 
     __builtin_write_OSCCONL((uint8_t) (0x0102 & 0x00FF));
@@ -117,7 +161,7 @@ void InitU1(void){
    if (RCONbits.WDTO){
        Uart1SendString("---Reset by WDT---\r");
    }
-   Uart1SendString("---Init UART1 completed in init---\r");
+   Uart1SendString("---Init UART1 completed---\r");
 }
 
 void initTimer1( void ){
@@ -143,4 +187,21 @@ void initTimer2( void ){
     
     IEC0bits.T2IE = true;   // Enable the interrupt
     T2CONbits.TON = 1;      // Start the timer
+}
+
+unsigned int sampleBatt( void ){
+//    #define    FCY    8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
+//    #include <libpic30.h>           // has __delay_ms() function
+    unsigned int wait, value = 0;      // for for loop while sampling
+    AD1CON1bits.SAMP = 1;               // start sampling
+//    __delay_ms(100);      
+//    for(wait=0; wait < 1800; wait++){};    // give time to sample
+    AD1CON1bits.SAMP = 0;               // stop sampling, start conversion
+//    Uart1SendString("Converting\r");
+//    __delay_ms(200);      
+    while (!AD1CON1bits.DONE){}      // wait for conversion to be finished
+//    for(wait=0; wait < 180000; wait++){};    // give time to sample
+    value = ADC1BUF0;
+    Uart1SendString("Conversion finished\r");
+    return value;
 }

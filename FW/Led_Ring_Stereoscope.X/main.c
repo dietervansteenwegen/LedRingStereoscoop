@@ -60,9 +60,11 @@ bool HeartbeatState = 0;              // Heartbeat led state
 unsigned int PWMValue = 0x300;  // Start value for PWM duty
 signed int PWMStep = 7;         // Step size for PWM
 bool CountUp = 1;               // For the PWM of the heartbeat led
-unsigned int Counter =0x0;      // For the RED/GREEN LEDs
-unsigned int TempCounter = 0x0;
+unsigned int Counter, Tempcounter =0x0;      // For the RED/GREEN LEDs
+unsigned int CountMS = 0x0;
+unsigned int Batt_Raw = 0;
 bool FlagT2Expired = false;  // Flag to run the debouncing routine
+bool Flag500ms = false;     // Used in interrupt 2 to generate 500ms flag
 bool RotPush_GoneHigh, RotPush_GoneLow, RotA_GoneHigh, RotA_GoneLow, RotB_GoneHigh, RotB_GoneLow = false;
 bool RotCC = false;
 bool Rotated_CCW = false;
@@ -70,6 +72,7 @@ bool Rotated_CW = false;
 unsigned char RotSM = 2;
 unsigned char RotSM_OLD = 2;
 unsigned char i = 0;            // counter for for loop
+
 
 void __attribute__ ( ( interrupt, no_auto_psv ) ) _U1TXInterrupt ( void ){ 
     IFS0bits.U1TXIF = false;
@@ -132,13 +135,18 @@ void __attribute__ ( ( interrupt, no_auto_psv ) ) _T2Interrupt (  ){
     IFS0bits.T2IF = false;  // clear interrupt flag
     TMR2 = 0x0000;
     FlagT2Expired = true;
-//    TempCounter += 1;
-//    if (TempCounter == 0x1F4){      // 500 counts to check if it is 2ms
-//        TempCounter = 0x00;
-//        LED_Green_Toggle();
-//    }
-    
+    CountMS++;
+    if (CountMS == 250){
+        Flag500ms = true;
+        CountMS = 0;
+    }    
 
+}
+
+void __attribute__ ( ( interrupt, no_auto_psv ) ) _ADC1Interrupt( void ){
+    IFS0bits.AD1IF=0;
+    Uart1SendString("Interrupt\r");
+    
 }
 
 void start_routine ( void ){
@@ -179,7 +187,7 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
     /* State machine describing the status of the rotary encoder
      * Absolute polarity doesn't matter, only changes...
      *
-     * Possible states of RotSM:
+     * Valid states of RotSM:
      * ______________________________________________________
      * |       |                                            |
      * |  "1"  |  B has changed first, assume CCW rotation  |
@@ -294,6 +302,23 @@ int main(void) {
                 }
             }
             
+        }
+        
+        if (Flag500ms == true){
+            Flag500ms = false;
+            Uart1SendString("Sampling...\r");
+//            Batt_Raw = sampleBatt();
+            Uart1SendString("Value:\r");
+//            Uart1SendString(Batt_Raw);
+//            Uart1SendChar(Batt_Raw);
+            Uart1SendChar('\r');
+            if (!Charging){
+                LED_Red_SetHigh();
+                Uart1SendString("Charging!");
+            }else{
+                LED_Red_SetLow();
+                Uart1SendString("Not charging.");
+            }
         }
     }
 return 1;
