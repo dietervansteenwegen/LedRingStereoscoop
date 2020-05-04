@@ -12,8 +12,9 @@
 
 #include <xc.h> // include processor files - each processor file is guarded.  
 #include <stdbool.h>
-#include <stdint.h>
 #include "uart.h"
+#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
+#include <libpic30.h>           // has __delay_ms() function
 
 /***********/
 /* METHODS */
@@ -27,7 +28,7 @@ void initInterrupts (void);
 void InitU1(void);
 void initTimer1( void );
 void initTimer2( void );
-unsigned int sampleBatt( void );
+uint16_t sampleBatt( void );
 
 /***********/
 /* DEFINES */

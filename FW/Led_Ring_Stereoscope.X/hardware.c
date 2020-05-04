@@ -7,6 +7,8 @@
 
 #include <xc.h>
 #include "hardware.h"
+#include "i2c1.h"
+#include "TLC59116.h"
 
 void init_hardware( void ){
     
@@ -17,6 +19,8 @@ void init_hardware( void ){
     InitU1();
     initTimer1();
     initTimer2();
+    I2C1_InitModule();
+    TLC59116_InitReset();
 }
 
 void initPins( void ){
@@ -189,7 +193,7 @@ void initTimer2( void ){
     T2CONbits.TON = 1;      // Start the timer
 }
 
-unsigned int sampleBatt( void ){
+uint16_t sampleBatt( void ){
 //    #define    FCY    8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 //    #include <libpic30.h>           // has __delay_ms() function
     unsigned int wait, value = 0;      // for for loop while sampling

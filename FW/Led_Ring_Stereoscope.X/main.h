@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include "hardware.h"
 #include "uart.h"
+#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
+#include <libpic30.h>           // has __delay_ms() function
 
 /* METHODS */
 
@@ -55,6 +57,7 @@ typedef union
 
 void start_routine (void);
 bool check_inputs (void);
+void setup (void);
 
 #ifdef	__cplusplus
 extern "C" {
