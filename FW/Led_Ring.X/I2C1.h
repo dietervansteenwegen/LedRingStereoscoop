@@ -8,7 +8,8 @@
 
 #ifndef XC_I2C1
 #define	XC_I2C1
-#include <xc.h> // include processor files - each processor file is guarded. 
+#include "xc.h" // include processor files - each processor file is guarded. 
+#include <stdint.h>
 //#define FCY 6000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 //#include <libpic30.h>
 

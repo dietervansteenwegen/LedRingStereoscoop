@@ -10,6 +10,7 @@
 #ifndef MAIN_H
 #define	MAIN_H
 
+#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 #include <xc.h> // include processor files - each processor file is guarded.  
 
 #include <stdlib.h>
@@ -17,7 +18,6 @@
 #include <stdint.h>
 #include "hardware.h"
 #include "uart.h"
-#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 #include <libpic30.h>           // has __delay_ms() function
 
 /* METHODS */

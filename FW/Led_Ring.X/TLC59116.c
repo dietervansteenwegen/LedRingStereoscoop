@@ -52,7 +52,7 @@ uint8_t setAllLeds(uint8_t * brightness1){
     // the need for individual adressing.
     // expects 16 values starting at *brightness1
     I2C1_Write(TLC59116_Address, 0xFF, brightness1, 16);
-    
+    return 1;
 }
 
 int8_t TLC59116_InitReset(void){

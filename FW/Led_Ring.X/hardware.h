@@ -13,7 +13,7 @@
 #include <xc.h> // include processor files - each processor file is guarded.  
 #include <stdbool.h>
 #include "uart.h"
-#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
+//#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 #include <libpic30.h>           // has __delay_ms() function
 
 /***********/

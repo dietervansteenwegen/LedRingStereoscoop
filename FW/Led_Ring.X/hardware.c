@@ -19,7 +19,7 @@ void init_hardware( void ){
     InitU1();
     initTimer1();
     initTimer2();
-    I2C1_InitModule();
+    I2C1_Init();
     TLC59116_InitReset();
 }
 

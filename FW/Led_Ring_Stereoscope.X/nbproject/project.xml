@@ -16,6 +16,7 @@
                 <sourceRootElem>../../../../../Progs/MPLab/packs/Microchip/PIC24F-GA-GB_DFP</sourceRootElem>
                 <sourceRootElem>C:/Program Files (x86)/Microchip/xc16/v1.36/support/generic/h</sourceRootElem>
                 <sourceRootElem>C:/Program Files (x86)/Microchip/xc16/v1.36/support/PIC24F/h</sourceRootElem>
+                <sourceRootElem>.</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
