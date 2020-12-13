@@ -7,7 +7,6 @@
 *.o
 *.sdb
 *.obj.dmp
-Makefile*
 html/
 nbproject/private/
 nbproject/Package-*.bash
@@ -15,7 +14,6 @@ build/
 nbbuild/
 dist/
 nbdist/
-nbproject/
 nbactions.xml
 nb-configuration.xml
 funclist
