@@ -1,0 +1,18 @@
+*** v0.1 -> v0.2 ***
+- Silkscreen positions
+- pull up U3 _shutDown
+
+*** v0.2 -> v0.3 ***
+- diode between pull up and _MCLR was reversed. Corrected.
+- SCL on correct uC pin (does not support PPS)
+- moved TP1 to RA0
+- Added J4 to allow current measurement in-circuit
+
+
+TODO (for v0.3): 
+- Check if pull up/down resistors on rotary encoder are already changed so that bodge wires aren't necessery anymore.
+- LDO aanpassen
+- Rext (?)
+- Footprint leds aanpassen
+- silkscreen both sides (connectors)
+- on/off switch more to side
