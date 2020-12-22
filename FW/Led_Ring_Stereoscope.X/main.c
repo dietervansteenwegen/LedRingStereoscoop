@@ -11,7 +11,10 @@
 #include "TLC59116.h"
 
 const uint8_t MASTER_BRIGHT_MAX = 0xC0;
-const uint8_t MASTER_BRIGHT_STEP = 0x10;
+const uint8_t MASTER_BRIGHT_STEP = 0x07;
+const uint8_t MASTER_BRIGHT_KNEE = 0x50;  // to have more steps at low values
+const uint8_t MASTER_BRIGHT_START = 0x50;
+
 
 
 bool RotPush_GoneHigh, RotPush_GoneLow = false;  // for the rotary pushbutton
@@ -31,14 +34,23 @@ void updateMasterBright (int8_t direction){
         if ( masterBright > (MASTER_BRIGHT_MAX - MASTER_BRIGHT_STEP)){
             masterBright = MASTER_BRIGHT_MAX;
         }else{
-            masterBright += MASTER_BRIGHT_STEP;
+            if (masterBright > MASTER_BRIGHT_KNEE){
+            masterBright += (MASTER_BRIGHT_STEP * 2);
+            }else{
+            masterBright += (MASTER_BRIGHT_STEP);
+                
+            }
         }
         break;
     case -1:
         if (masterBright < MASTER_BRIGHT_STEP){
             masterBright = 0;
         }else{
-            masterBright -= MASTER_BRIGHT_STEP;
+            if (masterBright > MASTER_BRIGHT_KNEE){
+                masterBright -= (MASTER_BRIGHT_STEP * 2);
+            }else{
+                masterBright -= MASTER_BRIGHT_STEP;
+            }
         }
     }
 }
@@ -180,11 +192,11 @@ void initialFillStruct ( structStripDef * stripDef ){
     uint8_t i;
     stripDef->center = 8;
     stripDef->width = 16;
-    stripDef->masterBrightness = 0x7F;
-    for (i = 0; i < 15; i++){
+    stripDef->masterBrightness = MASTER_BRIGHT_START;
+    for (i = 0; i < 16; i++){
         stripDef->ledBrightness[i] = 0xFF;
     }
-    stripDef->hasBeenUpdated = 0;
+    stripDef->hasBeenUpdated = 1;
 }
 
 void updateStrip (void){
@@ -202,10 +214,7 @@ int main(void) {
     
     /*Init completed*/
     initialFillStruct(&StripDef);
-//    initialFillStruct(&nextStripDef);
-    setAllLedsManual(0x20);
-    __delay_ms(50);
-    setAllLedsManual(0x50);
+    updateStrip();
     Uart1SendString("init complete\n");
     
     /*Main loop*/

@@ -56,7 +56,7 @@ void updateMasterBright (int8_t direction);
 void rotated (int8_t direction);
 void stateMachineAdvance ( void );
 bool check_inputs (void);
-void setup (void);
+//void setup (void);
 void setAllLedsManual ( uint8_t );
 void initialFillStruct ( structStripDef *);
 void updateStrip (void);
