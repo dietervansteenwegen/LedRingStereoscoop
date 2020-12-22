@@ -14,7 +14,7 @@ bool RotPush_GoneHigh, RotPush_GoneLow = false;  // for the rotary pushbutton
 bool Rotated_CCW, Rotated_CW = false;
 structStripDef currentStripDef, nextStripDef;
 extern volatile bool Flag2ms;  // Flag to run the debouncing routine
-extern volatile bool Flag500ms;     // Used in interrupt 2 to generate 500ms flag
+extern volatile bool Flag100ms;     // Used in interrupt 2 to generate 500ms flag
 uint8_t RotSM,RotSM_OLD = 2;
 
 
@@ -196,8 +196,8 @@ int main(void) {
             }
         }
         
-        if (Flag500ms == true){
-            Flag500ms = false;
+        if (Flag100ms == true){
+            Flag100ms = false;
 //            Batt_Raw = sampleBatt();
 //            if (!Charging){
 //                LED_Red_SetHigh();

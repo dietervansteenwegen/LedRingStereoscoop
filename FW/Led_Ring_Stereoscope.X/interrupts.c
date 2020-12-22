@@ -13,7 +13,7 @@ bool CountUp = 1;               // For the PWM of the heartbeat led
 unsigned int Counter, Tempcounter =0x0;      // For the RED/GREEN LEDs
 unsigned int CountMS = 0x0;
 bool Flag2ms = false;  // Flag to run the debouncing routine
-bool Flag500ms = false;     // Used in interrupt 2 to generate 500ms flag
+bool Flag100ms = false;     // Used in interrupt 2 to generate 500ms flag
 
 //bool RotA_GoneHigh, RotA_GoneLow, RotB_GoneHigh, RotB_GoneLow = false; // for the rotary encoder
 
@@ -80,8 +80,8 @@ void __attribute__ ( ( interrupt, no_auto_psv ) ) _T2Interrupt (  ){
     TMR2 = 0x0000;
     Flag2ms = true;
     CountMS++;
-    if (CountMS == 250){
-        Flag500ms = true;
+    if (CountMS == 50){
+        Flag100ms = true;
         CountMS = 0;
     }    
 

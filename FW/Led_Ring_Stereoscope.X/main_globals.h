@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 //extern volatile bool  RotA_GoneHigh, RotA_GoneLow, RotB_GoneHigh, RotB_GoneLow;
-extern volatile bool Flag500ms;
+extern volatile bool Flag100ms;
 extern volatile bool Flag2ms;  // Flag to run the debouncing routine
 
 
