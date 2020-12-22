@@ -25,6 +25,7 @@
 
 int8_t TLC59116_InitReset (void);                             // high level
 uint8_t setLed(uint8_t led, uint8_t brightness);
-uint8_t setAllLeds(uint8_t * brightness1);
+void setAllLeds(uint8_t * brightness1);
+void setGroupPWM (uint8_t groupPwm);
 #endif
 
