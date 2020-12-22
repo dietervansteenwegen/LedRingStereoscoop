@@ -10,16 +10,69 @@
 #include "main.h"
 #include "TLC59116.h"
 
+const uint8_t MASTER_BRIGHT_MAX = 0xC0;
+const uint8_t MASTER_BRIGHT_STEP = 0x10;
+
+
 bool RotPush_GoneHigh, RotPush_GoneLow = false;  // for the rotary pushbutton
 bool Rotated_CCW, Rotated_CW = false;
-structStripDef currentStripDef, nextStripDef;
+//structStripDef currentStripDef, nextStripDef;
+structStripDef StripDef;
 extern volatile bool Flag2ms;  // Flag to run the debouncing routine
 extern volatile bool Flag100ms;     // Used in interrupt 2 to generate 500ms flag
 uint8_t RotSM,RotSM_OLD = 2;
+uint8_t StateMachineState = 0;  // 0 = master brightness, 1 = width, 2 = center
 
 
+void updateMasterBright (int8_t direction){
+    switch(direction){
+    case 1:     // increment
+        /* make sure we can't go higher than MASTER_BRIGHT_MAX */
+        if ( masterBright > (MASTER_BRIGHT_MAX - MASTER_BRIGHT_STEP)){
+            masterBright = MASTER_BRIGHT_MAX;
+        }else{
+            masterBright += MASTER_BRIGHT_STEP;
+        }
+        break;
+    case -1:
+        if (masterBright < MASTER_BRIGHT_STEP){
+            masterBright = 0;
+        }else{
+            masterBright -= MASTER_BRIGHT_STEP;
+        }
+    }
+}
 
+/**
+ * Rotated
+ * @param int8_t direction: -1 means down, 1 means up
+ */
+void rotated (int8_t direction){
+    switch(StateMachineState){
+    case 0:     // master brightness
+        updateMasterBright(direction);
+        updated = 1;
+        break;
+    case 1:     // segment width
+        Nop();
+        break;
+    case 2:     // segment center
+        Nop();
+        break;
+    }
+}
 
+/**
+ * StateMachineAdvance
+ * Updates the state machine state to the next state.
+ * States: 0 = master brightness, 1 = width, 2 = center
+ */
+void stateMachineAdvance ( void ){
+    StateMachineState++;
+    if (StateMachineState > 2){
+        StateMachineState = 0;
+    }
+}
 bool check_inputs ( void ){     // checks status of inputs, returns true if anything has changed
     bool InputChanged = false;
     static char bitmask = 0b11111;      // Only care about the 5 least significant digits
@@ -89,20 +142,10 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
                 if(RotSM_OLD == 1){
                     InputChanged = true;
                     Rotated_CCW = true;
-                    uint8_t i;
-                    for (i=0; i < 16; i++){
-                        nextStripDef.ledBrightness[i] = nextStripDef.ledBrightness[i] + 0x10;
-                    }
-                    nextStripDef.hasBeenUpdated = 1;
                 }
                 if(RotSM_OLD == 3){
                     InputChanged = true;
                     Rotated_CW = true;
-                    uint8_t i;
-                    for (i=0; i < 16; i++){
-                        nextStripDef.ledBrightness[i] = nextStripDef.ledBrightness[i] - 0x10;
-                    }
-                    nextStripDef.hasBeenUpdated = 1;
                 }
             case 3:
                 // A has toggled, B not yet
@@ -125,7 +168,8 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
     }
     
 }
-void setLedsManual ( uint8_t value){
+
+void setAllLedsManual ( uint8_t value){
     uint8_t i = 1;
     for (i=1;i<17;i++){
         setLed(i,value);
@@ -136,18 +180,17 @@ void initialFillStruct ( structStripDef * stripDef ){
     uint8_t i;
     stripDef->center = 8;
     stripDef->width = 16;
-    stripDef->masterBrigtness = 0x7F;
+    stripDef->masterBrightness = 0x7F;
     for (i = 0; i < 15; i++){
         stripDef->ledBrightness[i] = 0xFF;
     }
     stripDef->hasBeenUpdated = 0;
 }
 
-void checkNextStripDef (void){
-    if(nextStripDef.hasBeenUpdated){
-        setAllLeds(&nextStripDef.ledBrightness[0]);
-        nextStripDef.hasBeenUpdated = 0;
-    }
+void updateStrip (void){
+    setGroupPWM(masterBright);
+    setAllLeds(&StripDef.ledBrightness[0]);
+    updated = 0;
 }
 
 int main(void) {
@@ -158,13 +201,12 @@ int main(void) {
     StartWDT();
     
     /*Init completed*/
-    initialFillStruct(&currentStripDef);
-    initialFillStruct(&nextStripDef);
-    setLedsManual(0x20);
+    initialFillStruct(&StripDef);
+//    initialFillStruct(&nextStripDef);
+    setAllLedsManual(0x20);
     __delay_ms(50);
-    setLedsManual(0x50);
+    setAllLedsManual(0x50);
     Uart1SendString("init complete\n");
-    uint8_t grpPwm = 0xFF;
     
     /*Main loop*/
     while(1){
@@ -178,6 +220,7 @@ int main(void) {
                     RotPush_GoneHigh = false;
                     LED_Red_SetLow();
                     LED_Green_SetLow();
+                    stateMachineAdvance();
                 }
                 if (RotPush_GoneLow) {
                     /* don't do nothing at the moment, might use this for long press */
@@ -188,10 +231,12 @@ int main(void) {
                 if (Rotated_CCW){
                     LED_Red_Toggle();
                     Rotated_CCW = false;
+                    rotated(-1);
                 }
                 if (Rotated_CW){
                     LED_Green_Toggle();
                     Rotated_CW = false;
+                    rotated(1);
                 }
             }
         }
@@ -201,14 +246,11 @@ int main(void) {
 //            Batt_Raw = sampleBatt();
 //            if (!Charging){
 //                LED_Red_SetHigh();
-//                Uart1SendString("Charging!");
 //            }else{
 //                LED_Red_SetLow();
 //            }
-            setGroupPWM(grpPwm);
-            grpPwm = grpPwm - 0x7;
-            if (grpPwm <= 0x7){
-                grpPwm = 0xFF;
+            if (updated){
+                updateStrip();
             }
         }
         

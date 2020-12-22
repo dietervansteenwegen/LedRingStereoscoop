@@ -44,16 +44,21 @@
 typedef struct{
     uint8_t center; // center of the "strip"
     uint8_t width; // width of the strip (max 16 leds)
-    uint8_t masterBrigtness;    // master brightness of the ring (max 0xFF)
+    uint8_t masterBrightness;    // master brightness of the ring (max 0xFF)
     uint8_t ledBrightness[16];  // brightness of individual leds
     unsigned hasBeenUpdated:1;  // for use with the next stripDef
 }structStripDef;
 
+#define masterBright StripDef.masterBrightness
+#define updated StripDef.hasBeenUpdated
 
+void updateMasterBright (int8_t direction);
+void rotated (int8_t direction);
+void stateMachineAdvance ( void );
 bool check_inputs (void);
 void setup (void);
-void setLedsManual ( uint8_t );
+void setAllLedsManual ( uint8_t );
 void initialFillStruct ( structStripDef *);
-void checkNextStripDef (void);
+void updateStrip (void);
 #endif	/* XC_HEADER_TEMPLATE_H */
 
