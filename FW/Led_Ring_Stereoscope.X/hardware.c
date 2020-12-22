@@ -5,10 +5,12 @@
  * Created on February 15, 2018, 7:27 PM
  */
 
+#define  FCY 6000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 #include <xc.h>
 #include "hardware.h"
 #include "i2c1.h"
 #include "TLC59116.h"
+#include <libpic30.h>          // For delay functions
 
 void init_hardware( void ){
     
@@ -21,6 +23,7 @@ void init_hardware( void ){
     initTimer2();
     I2C1_InitModule();
     TLC59116_InitReset();
+    led_start_routine();
 }
 
 void initPins( void ){
@@ -193,10 +196,24 @@ void initTimer2( void ){
     T2CONbits.TON = 1;      // Start the timer
 }
 
+void led_start_routine ( void ){
+        /* Blink ALL led's to indicate reboot */
+    uint8_t i = 0;
+
+    LED_Red_SetHigh();
+    LED_Heartbeat_SetHigh();
+    LED_Green_SetHigh();
+    for (i=0;i<4;i++){
+        LED_Red_Toggle();
+        LED_Green_Toggle();
+        LED_Heartbeat_Toggle();
+        __delay_ms(500);  
+    }
+}
+
 uint16_t sampleBatt( void ){
-//    #define    FCY    8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
-//    #include <libpic30.h>           // has __delay_ms() function
-    unsigned int wait, value = 0;      // for for loop while sampling
+
+    uint8_t value = 0;      // for for loop while sampling
     AD1CON1bits.SAMP = 1;               // start sampling
 //    __delay_ms(100);      
 //    for(wait=0; wait < 1800; wait++){};    // give time to sample

@@ -13,8 +13,6 @@
 #include <xc.h> // include processor files - each processor file is guarded.  
 #include <stdbool.h>
 #include "uart.h"
-#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
-#include <libpic30.h>           // has __delay_ms() function
 
 /***********/
 /* METHODS */
@@ -29,6 +27,7 @@ void InitU1(void);
 void initTimer1( void );
 void initTimer2( void );
 uint16_t sampleBatt( void );
+void led_start_routine (void);
 
 /***********/
 /* DEFINES */
@@ -85,13 +84,6 @@ uint16_t sampleBatt( void );
 #define LED_Heartbeat_SetDigOut()        _TRISB13 = 0
 
 #define StartWDT()              RCONbits.SWDTEN = 0x01;    // Start Software WDT (512ms for PRE = POSTscaler = 128)
-
-typedef unsigned int            UINT;
-typedef unsigned char           UINT8;
-typedef unsigned short int      UINT16;
-typedef unsigned char           BYTE;                           /* 8-bit unsigned  */
-typedef unsigned short int      WORD;                           /* 16-bit unsigned */
-typedef unsigned long           DWORD;                          /* 32-bit unsigned */
 
 #ifdef	__cplusplus
 extern "C" {
