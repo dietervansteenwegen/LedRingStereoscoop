@@ -203,11 +203,11 @@ void led_start_routine ( void ){
     LED_Red_SetHigh();
     LED_Heartbeat_SetHigh();
     LED_Green_SetHigh();
-    for (i=0;i<4;i++){
+    for (i=0;i<2;i++){
         LED_Red_Toggle();
         LED_Green_Toggle();
         LED_Heartbeat_Toggle();
-        __delay_ms(500);  
+        __delay_ms(100);  
     }
 }
 
