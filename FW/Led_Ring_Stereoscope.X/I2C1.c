@@ -51,7 +51,7 @@ int8_t I2C1_InitModule (void)
     
     I2C1_ResetBusPins();            // Toggle clock line to reset any hanging devices
     /* I2C baud rate */
-    I2C1BRG = 0x1B;             // FRC = 8MHz, FRCDIV = 4, PLL pre = 6, Fscl = 0.1MHz
+    I2C1BRG = 0x1C;             // FRC = 8MHz, FRCDIV = 4, PLL pre = 6, Fscl = 0.1MHz
     
     /* I2C1CONL/H Control register */
     I2C1CONLbits.I2CSIDL = 0;   // 0 = Continues module operation in Idle mode
@@ -319,7 +319,7 @@ int8_t I2C1_WriteSingleByte(uint8_t cData){
     }
 }
 
-int8_t I2C1_Write(uint8_t DeviceAddress, uint8_t SubAddress, const uint8_t *Payload, uint8_t ByteCnt){
+int8_t I2C1_Write(uint8_t DeviceAddress, uint8_t Register, const uint8_t *Payload, uint8_t ByteCnt){
     //Writes buffered data to target address/sub address.
     //Returns:
     //I2C_OK
@@ -358,13 +358,12 @@ int8_t I2C1_Write(uint8_t DeviceAddress, uint8_t SubAddress, const uint8_t *Payl
             
     }
     
-    // send sub address if not 0xF
-    if(SubAddress != 0xFF){
-        if(I2C1_WriteSingleByte(SubAddress)!= I2C1_ACK){
-            I2C1_Stop();
-            I2C1_Bus_SetDirty;
-            return I2C1_Err_CommunicationFail;
-        }
+    // send Register
+
+    if(I2C1_WriteSingleByte(Register)!= I2C1_ACK){
+        I2C1_Stop();
+        I2C1_Bus_SetDirty;
+        return I2C1_Err_CommunicationFail;
     }
     
     // and finally payload
@@ -433,7 +432,7 @@ int8_t I2C1_ReadSingleByte(uint8_t ACKRequired){
     return I2C1RCV;                     // return contents of buffer, reading clears RBF
 }
 
-int8_t I2C1_Read(uint8_t DeviceAddress, uint8_t SubAddress, uint8_t *ReadBuffer, uint8_t ByteCnt){
+int8_t I2C1_Read(uint8_t DeviceAddress, uint8_t Register, uint8_t *ReadBuffer, uint8_t ByteCnt){
     // Reads data from target into buffer
     // Returns:
     // I2C_Ok
@@ -472,13 +471,11 @@ int8_t I2C1_Read(uint8_t DeviceAddress, uint8_t SubAddress, uint8_t *ReadBuffer,
             return I2C1_Err_CommunicationFail;
     }
     
-    // address slave sub address
-    if(SubAddress != 0xFF){
-        if(I2C1_WriteSingleByte(SubAddress) != I2C1_OK){
-            I2C1_Stop();
-            I2C1_Bus_SetDirty;
-            return I2C1_Err_CommunicationFail;        
-        }
+    // address slave register
+    if(I2C1_WriteSingleByte(Register) != I2C1_OK){
+        I2C1_Stop();
+        I2C1_Bus_SetDirty;
+        return I2C1_Err_CommunicationFail;        
     }
     // restart bus
     if(I2C1_Restart()!=I2C1_OK){

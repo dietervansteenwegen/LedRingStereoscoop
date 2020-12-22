@@ -70,7 +70,7 @@ int8_t I2C1_Stop ();
 int8_t I2C1_Restart();
 int8_t I2C1_PollDevice (uint8_t DeviceAddress);
 int8_t I2C1_WriteSingleByte(uint8_t);
-int8_t I2C1_Write(uint8_t DeviceAddress, uint8_t SubAddr, const uint8_t *Payload, uint8_t ByteCnt);
+int8_t I2C1_Write(uint8_t DeviceAddress, uint8_t Register, const uint8_t *Payload, uint8_t ByteCnt);
 int8_t I2C1_ReadSingleByte(uint8_t ACKRequired);
-int8_t I2C1_Read(uint8_t DeviceAddress, uint8_t SubAddress, uint8_t *ReadBuffer, uint8_t ByteCnt);
+int8_t I2C1_Read(uint8_t DeviceAddress, uint8_t Register, uint8_t *ReadBuffer, uint8_t ByteCnt);
 #endif	/* XC_HEADER_TEMPLATE_H */
