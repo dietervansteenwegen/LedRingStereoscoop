@@ -10,145 +10,15 @@
 #include "main.h"
 #include "TLC59116.h"
 
+bool RotPush_GoneHigh, RotPush_GoneLow = false;  // for the rotary pushbutton
+bool Rotated_CCW, Rotated_CW = false;
+structStripDef currentStripDef, nextStripDef;
+extern volatile bool Flag2ms;  // Flag to run the debouncing routine
+extern volatile bool Flag500ms;     // Used in interrupt 2 to generate 500ms flag
+uint8_t RotSM,RotSM_OLD = 2;
 
 
-/* Variables for the heartbeat LED
-   PWM cycle is 936 steps, so full off - full on cycle takes
-   (936/7)*0.01s = 0.85s */
-bool HeartbeatState = 0;              // Heartbeat led state
-unsigned int PWMValue = 0x300;  // Start value for PWM duty
-signed int PWMStep = 7;         // Step size for PWM
-bool CountUp = 1;               // For the PWM of the heartbeat led
-unsigned int Counter, Tempcounter =0x0;      // For the RED/GREEN LEDs
-unsigned int CountMS = 0x0;
-unsigned int Batt_Raw = 0;
-bool FlagT2Expired = false;  // Flag to run the debouncing routine
-bool Flag500ms = false;     // Used in interrupt 2 to generate 500ms flag
-bool RotPush_GoneHigh, RotPush_GoneLow, RotA_GoneHigh, RotA_GoneLow, RotB_GoneHigh, RotB_GoneLow = false;
-bool RotCC = false;
-bool Rotated_CCW = false;
-bool Rotated_CW = false;
-unsigned char RotSM = 2;
-unsigned char RotSM_OLD = 2;
-unsigned char i = 0;            // counter for for loop
-struct ledStatus{
-    uint8_t cur_masterBrightness;
-    uint8_t next_masterBrightness;
-    uint8_t cur_width;
-    uint8_t next_width;
-    uint8_t cur_center;
-    uint8_t next_center;
-    uint8_t cur_bright[16];
-    uint8_t next_bright[16];
-}ledStatus;
 
-
-void __attribute__ ( ( interrupt, no_auto_psv ) ) _U1TXInterrupt ( void ){ 
-    IFS0bits.U1TXIF = false;
-}
-
-void __attribute__ ( ( interrupt, no_auto_psv ) ) _U1RXInterrupt ( void ){ 
-    IFS0bits.U1RXIF = false; // clear interrupt bit
-
-}
-
-void __attribute__ ( ( interrupt, no_auto_psv ) ) _CNInterrupt ( void ){ 
-    IFS1bits.CNIF = false;
-//    LED_Green_Toggle();
-}
-
-void __attribute__ ( ( interrupt, no_auto_psv ) ) _T1Interrupt (  ){
-/* ISR for TIMER 1 which has two functions:
-   - Heartbeat LED_Heartbeat (orange) and bootup led (Red)
-        0x3A8 is about 10ms (0.06% error)
-        Higher PWMValue: Higher brightness
- */
-    IFS0bits.T1IF = false;  // clear interrupt flag
-    TMR1 = 0x0000;
-    if(HeartbeatState){                   // Led is currently on
-        LED_Heartbeat_SetLow();          // switch off
-        PR1 = 0x3A8 - PWMValue;     // TMR1 set for off time (10ms - on time)
-    }else{
-        LED_Heartbeat_SetHigh();
-        PR1 = PWMValue;
-        if(CountUp){
-            PWMValue = PWMValue + PWMStep;
-        } else{
-            PWMValue = PWMValue - PWMStep;
-        }
-        if (PWMValue > 0x100){
-            PWMStep = 15;   // Value of PWMStep changes depending on duty cycle to compensate for non-linearity of led brightness
-        }else{
-            PWMStep = 2;
-        }
-        if(PWMValue>0x390){
-            CountUp = 0;     // count down again
-        }
-        if(PWMValue<10){
-            CountUp = 1;     // count up
-        }
-    }
-    HeartbeatState = !HeartbeatState;
-    /* Boot led shows that PIC has (re)started... 
-     red LED_Boot starts counting down from 200, decrementing each half PWM cycle.
-     if it is not 0, decrement 1
-     if, after decrementing it is zero, switch off boot led
-    */
-
-}
-
-void __attribute__ ( ( interrupt, no_auto_psv ) ) _T2Interrupt (  ){
-/* ISR for TIMER 2 which has two functions:
- * - Sets flag every 2ms (0xBB) to let main routine check for button status and debounce
- */
-    IFS0bits.T2IF = false;  // clear interrupt flag
-    TMR2 = 0x0000;
-    FlagT2Expired = true;
-    CountMS++;
-    if (CountMS == 25){
-        Flag500ms = true;
-        CountMS = 0;
-    }    
-
-}
-
-void __attribute__ ( ( interrupt, no_auto_psv ) ) _ADC1Interrupt( void ){
-    IFS0bits.AD1IF=0;
-    Uart1SendString("Interrupt\r");
-    
-}
-void setup (void)
-{
-    uint8_t i;
-    uint8_t *pCur_bright;
-    pCur_bright = &ledStatus.cur_bright[0];
-
-    for(i=0; i < 16; i++){
-        *(pCur_bright + i) = 0xFF;
-    }
-    
-    ledStatus.cur_width = 16;
-    ledStatus.next_width = 16;
-    ledStatus.cur_center = 0;
-    ledStatus.next_center = 0;
-    ledStatus.cur_masterBrightness = 10;
-    ledStatus.next_masterBrightness = 10;
-    
-}
-
-void start_routine ( void ){
-        /* Blink ALL led's for 2 second to indicate reboot */
-
-    LED_Red_SetHigh();
-    LED_Heartbeat_SetHigh();
-    LED_Green_SetHigh();
-    for (i=0;i<11;i++){
-        LED_Red_Toggle();
-        LED_Green_Toggle();
-        LED_Heartbeat_Toggle();
-        __delay_ms(100);  
-    }
-}
 
 bool check_inputs ( void ){     // checks status of inputs, returns true if anything has changed
     bool InputChanged = false;
@@ -219,10 +89,20 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
                 if(RotSM_OLD == 1){
                     InputChanged = true;
                     Rotated_CCW = true;
+                    uint8_t i;
+                    for (i=0; i < 16; i++){
+                        nextStripDef.ledBrightness[i] = nextStripDef.ledBrightness[i] + 0x10;
+                    }
+                    nextStripDef.hasBeenUpdated = 1;
                 }
                 if(RotSM_OLD == 3){
                     InputChanged = true;
                     Rotated_CW = true;
+                    uint8_t i;
+                    for (i=0; i < 16; i++){
+                        nextStripDef.ledBrightness[i] = nextStripDef.ledBrightness[i] - 0x10;
+                    }
+                    nextStripDef.hasBeenUpdated = 1;
                 }
             case 3:
                 // A has toggled, B not yet
@@ -245,30 +125,54 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
     }
     
 }
+void setLedsManual ( uint8_t value){
+    uint8_t i = 1;
+    for (i=1;i<17;i++){
+        setLed(i,value);
+    }
+}
 
+void initialFillStruct ( structStripDef * stripDef ){
+    uint8_t i;
+    stripDef->center = 8;
+    stripDef->width = 16;
+    stripDef->masterBrigtness = 0x7F;
+    for (i = 0; i < 15; i++){
+        stripDef->ledBrightness[i] = 0xFF;
+    }
+    stripDef->hasBeenUpdated = 0;
+}
+
+void checkNextStripDef (void){
+    if(nextStripDef.hasBeenUpdated){
+        setAllLeds(&nextStripDef.ledBrightness[0]);
+        nextStripDef.hasBeenUpdated = 0;
+    }
+}
 
 int main(void) {
     
     /*Initialize*/
     init_hardware();         // Init all the hardware components
-    start_routine();         // blink leds
-    setup();
+    led_start_routine();         // blink leds
     StartWDT();
     
     /*Init completed*/
-    uint8_t i = 1;
-    for (i=1;i<17;i++){
-        setLed(i,0x7F);
-        __delay_ms(100);
-    }
+    initialFillStruct(&currentStripDef);
+    initialFillStruct(&nextStripDef);
+    setLedsManual(0x20);
+    __delay_ms(50);
+    setLedsManual(0x50);
+    Uart1SendString("init complete\n");
+    uint8_t grpPwm = 0xFF;
+    
     /*Main loop*/
     while(1){
         ClrWdt();
                 
-        if (FlagT2Expired == true){     // 2ms have passed
-            FlagT2Expired = false;
+        if (Flag2ms == true){     // 2ms have passed
+            Flag2ms = false;
             if (check_inputs()){
-                
                 /* First check pushbutton*/
                 if (RotPush_GoneHigh){
                     RotPush_GoneHigh = false;
@@ -276,9 +180,8 @@ int main(void) {
                     LED_Green_SetLow();
                 }
                 if (RotPush_GoneLow) {
+                    /* don't do nothing at the moment, might use this for long press */
                     RotPush_GoneLow = false;
-                    LED_Red_SetLow();
-                    LED_Green_SetLow();
                 }
                 
                 /* Then check rotary encoder */
@@ -291,24 +194,22 @@ int main(void) {
                     Rotated_CW = false;
                 }
             }
-            
         }
         
         if (Flag500ms == true){
             Flag500ms = false;
-//            Uart1SendString("Sampling...\r");
 //            Batt_Raw = sampleBatt();
-//            Uart1SendString("Value:\r");
-//            Uart1SendString(Batt_Raw);
-//            Uart1SendChar(Batt_Raw);
-//            Uart1SendChar('\r');
 //            if (!Charging){
 //                LED_Red_SetHigh();
 //                Uart1SendString("Charging!");
 //            }else{
 //                LED_Red_SetLow();
-//                Uart1SendString("Not charging.");
 //            }
+            setGroupPWM(grpPwm);
+            grpPwm = grpPwm - 0x7;
+            if (grpPwm <= 0x7){
+                grpPwm = 0xFF;
+            }
         }
         
     }

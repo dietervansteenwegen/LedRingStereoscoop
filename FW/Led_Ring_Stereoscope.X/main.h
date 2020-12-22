@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include "hardware.h"
 #include "uart.h"
-#define FCY 8000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
+#define FCY 6000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 #include <libpic30.h>           // has __delay_ms() function
 
 /* METHODS */
@@ -39,36 +39,21 @@
     #define __PACKED
 #endif
 
-typedef union
-{
-    BYTE Val;
-    struct __PACKED
-    {
-        __EXTENSION BYTE b0:1;
-        __EXTENSION BYTE b1:1;
-        __EXTENSION BYTE b2:1;
-        __EXTENSION BYTE b3:1;
-        __EXTENSION BYTE b4:1;
-        __EXTENSION BYTE b5:1;
-        __EXTENSION BYTE b6:1;
-        __EXTENSION BYTE b7:1;
-    } bits;
-} BYTE_VAL, BYTE_BITS;
+#define FCY 6000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 
-void start_routine (void);
+typedef struct{
+    uint8_t center; // center of the "strip"
+    uint8_t width; // width of the strip (max 16 leds)
+    uint8_t masterBrigtness;    // master brightness of the ring (max 0xFF)
+    uint8_t ledBrightness[16];  // brightness of individual leds
+    unsigned hasBeenUpdated:1;  // for use with the next stripDef
+}structStripDef;
+
+
 bool check_inputs (void);
 void setup (void);
-
-#ifdef	__cplusplus
-extern "C" {
-#endif /* __cplusplus */
-
-    // TODO If C++ is being used, regular C code needs function names to have C 
-    // linkage so the functions can be used by the c code. 
-
-#ifdef	__cplusplus
-}
-#endif /* __cplusplus */
-
+void setLedsManual ( uint8_t );
+void initialFillStruct ( structStripDef *);
+void checkNextStripDef (void);
 #endif	/* XC_HEADER_TEMPLATE_H */
 
