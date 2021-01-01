@@ -42,8 +42,8 @@
 #define FCY 6000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 
 typedef struct{
-    uint8_t center; // center of the "strip"
-    uint8_t width; // width of the strip (max 16 leds)
+    uint8_t cntr; // center of the "strip"
+    uint8_t wdt; // width of the strip (max 16 leds)
     uint8_t masterBrightness;    // master brightness of the ring (max 0xFF)
     uint8_t ledBrightness[16];  // brightness of individual leds
     unsigned hasBeenUpdated:1;  // for use with the next stripDef
@@ -51,12 +51,15 @@ typedef struct{
 
 #define masterBright StripDef.masterBrightness
 #define updated StripDef.hasBeenUpdated
+#define width StripDef.wdt
+#define center StripDef.cntr
 
+void recalculateSegment (void);
+void updateSegmentSettings (int8_t direction, uint8_t widthOrCenter);
 void updateMasterBright (int8_t direction);
 void rotated (int8_t direction);
 void stateMachineAdvance ( void );
 bool check_inputs (void);
-//void setup (void);
 void setAllLedsManual ( uint8_t );
 void initialFillStruct ( structStripDef *);
 void updateStrip (void);

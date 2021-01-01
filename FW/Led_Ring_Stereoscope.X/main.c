@@ -9,7 +9,6 @@
 #include "config.h"
 #include "main.h"
 #include "TLC59116.h"
-
 const uint8_t MASTER_BRIGHT_MAX = 0xC0;
 const uint8_t MASTER_BRIGHT_STEP = 0x07;
 const uint8_t MASTER_BRIGHT_KNEE = 0x50;  // to have more steps at low values
@@ -26,7 +25,93 @@ extern volatile bool Flag100ms;     // Used in interrupt 2 to generate 500ms fla
 uint8_t RotSM,RotSM_OLD = 2;
 uint8_t StateMachineState = 0;  // 0 = master brightness, 1 = width, 2 = center
 
+/**
+ * recalculateSegment
+ * recalculates values for all individual leds depending on center and width
+ */
+void recalculateSegment (void){
+    int8_t segStart,segStop; // start and stop of the segment, might be out of range 1-16
+    uint8_t targetLed; // used to hold target led number
+    segStart = center - ((width - 1)/2);
+    segStop = center + ((width -1)/2);
+    if (width == 16){
+        segStop++;
+    }
+    if (segStart < 1){
+        segStart = segStart + 16;
+        segStop = segStop + 16;
+    }
+    uint8_t i; // need to do 16 leds
+    targetLed = segStart;
+    for (i=1;i<17;i++){
+        if (targetLed <= segStop){
+            StripDef.ledBrightness[(targetLed % 16)] = 0xFF;
+        }else
+            StripDef.ledBrightness[(targetLed % 16)] = 0x00;
+        targetLed++;
+    }
+    
+}
 
+/**
+ * updateSegmentSettings
+ * updates the width or center of the segment and calculates individual led value
+ * set updated = 1
+ * @param direction: 1 to increment (wider) -1 to decrement (narrower)
+ * @param widthOrCenter: 1  for width, 2 for center
+ */
+void updateSegmentSettings (int8_t direction, uint8_t widthOrCenter){
+    switch (widthOrCenter){
+    case 1: //width
+        // width should be odd or maximum, so 1/3/5/7/9/11/13/15/16
+        switch (direction){
+        case 1: //wider
+            if(width > 14){
+                width = 16;
+            }else{
+                width = width + 2;
+            }
+            break;
+        case -1: //narrower
+            if (width > 15){
+                width = 15;
+            }else if(width < 2){
+                width = 1;
+            }else{
+                width = width - 2;
+            }
+            break;
+        }
+        break;
+    case 2: //center
+        switch (direction){
+        case 1: //increment
+            center++; 
+            if (center == 17){
+                center = 1;
+            }
+            break;
+        case -1: //decrement
+            center--; 
+            if (center == 0){
+                center = 16;
+            }
+            break;
+        }
+        break;
+    }
+
+    recalculateSegment();
+    updated = 1;
+}
+
+/**
+ * updateMasterBright
+ * Updates master brightness value in the struct
+ * Uses MASTER_BRIGHT_MAX, MASTER_BRIGHT_STEP, MASTER_BRIGHT_KNEE
+ * sets updated = 1
+ * @param direction: 1 to increment (brighter) -1 to decrement
+ */
 void updateMasterBright (int8_t direction){
     switch(direction){
     case 1:     // increment
@@ -38,7 +123,6 @@ void updateMasterBright (int8_t direction){
             masterBright += (MASTER_BRIGHT_STEP * 2);
             }else{
             masterBright += (MASTER_BRIGHT_STEP);
-                
             }
         }
         break;
@@ -53,23 +137,24 @@ void updateMasterBright (int8_t direction){
             }
         }
     }
+    updated = 1;
 }
 
 /**
  * Rotated
+ * Handles rotated rotary button depending on current StateMachineState
  * @param int8_t direction: -1 means down, 1 means up
  */
 void rotated (int8_t direction){
     switch(StateMachineState){
     case 0:     // master brightness
         updateMasterBright(direction);
-        updated = 1;
         break;
     case 1:     // segment width
-        Nop();
+        updateSegmentSettings(direction, 1);
         break;
     case 2:     // segment center
-        Nop();
+        updateSegmentSettings(direction, 2);
         break;
     }
 }
@@ -85,7 +170,12 @@ void stateMachineAdvance ( void ){
         StateMachineState = 0;
     }
 }
-bool check_inputs ( void ){     // checks status of inputs, returns true if anything has changed
+
+/**
+ * checks status of rotary encoder inputs and updates variables as necessary
+ * @return: true if anything has changed, else false
+ */
+bool check_inputs ( void ){
     bool InputChanged = false;
     static char bitmask = 0b11111;      // Only care about the 5 least significant digits
     static unsigned char RotA_State, RotB_State, RotPush_State; // Debounce "map" for RotA, RotB and RotPush
@@ -181,6 +271,11 @@ bool check_inputs ( void ){     // checks status of inputs, returns true if anyt
     
 }
 
+/**
+ * setAllLedsManual
+ * Test function, individually sets all leds to "value"
+ * @param value: value to set all leds to
+ */
 void setAllLedsManual ( uint8_t value){
     uint8_t i = 1;
     for (i=1;i<17;i++){
@@ -188,10 +283,19 @@ void setAllLedsManual ( uint8_t value){
     }
 }
 
+/**
+ * initialFillStruct
+ * Takes an empty structStripDef and sets default values:
+ * center = 8
+ * width = 16
+ * master brightness = MASTER_BRIGHT_START
+ * ledBrightness = 0xFF for all led's
+ * @param stripDef: the empty struct to be filled
+ */
 void initialFillStruct ( structStripDef * stripDef ){
     uint8_t i;
-    stripDef->center = 8;
-    stripDef->width = 16;
+    stripDef->cntr = 8;
+    stripDef->wdt = 16;
     stripDef->masterBrightness = MASTER_BRIGHT_START;
     for (i = 0; i < 16; i++){
         stripDef->ledBrightness[i] = 0xFF;
@@ -199,6 +303,11 @@ void initialFillStruct ( structStripDef * stripDef ){
     stripDef->hasBeenUpdated = 1;
 }
 
+/**
+ * updateStrip
+ * Sends masterBright + 16 led vals from StripDef to the driver over I2C
+ * clears hasBeenUpdated 
+ */
 void updateStrip (void){
     setGroupPWM(masterBright);
     setAllLeds(&StripDef.ledBrightness[0]);
@@ -241,6 +350,7 @@ int main(void) {
                     LED_Red_Toggle();
                     Rotated_CCW = false;
                     rotated(-1);
+                    
                 }
                 if (Rotated_CW){
                     LED_Green_Toggle();
@@ -264,5 +374,5 @@ int main(void) {
         }
         
     }
-return 1;
+    return 1;
 }
