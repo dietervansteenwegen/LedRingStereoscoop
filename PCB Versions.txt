@@ -7,7 +7,7 @@
 - SCL on correct uC pin (does not support PPS)
 - moved TP1 to RA0
 - Added J4 to allow current measurement in-circuit
-
+- Silkscreen for VCC in range (4-7V)
 
 TODO (for v0.3): 
 - Check if pull up/down resistors on rotary encoder are already changed so that bodge wires aren't necessery anymore.
