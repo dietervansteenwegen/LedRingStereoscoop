@@ -8,11 +8,15 @@
 - moved TP1 to RA0
 - Added J4 to allow current measurement in-circuit
 - Silkscreen for VCC in range (4-7V)
+- Rotary encoder: removed solder jumper (hardwired to Vcc), pull down resistors on each separate output
+- Silkscreen for DC/BATT connectors and ON/OFF on top (bottom) side
+- LED footprints corrected
+- LED Anodes connected to switched power, not directly to batt
+- Replaced resitor divider to higher values (lower current draw)
+- ~Charging moved to more logical pin
+
 
 TODO (for v0.3): 
 - Check if pull up/down resistors on rotary encoder are already changed so that bodge wires aren't necessery anymore.
 - LDO aanpassen
 - Rext (?)
-- Footprint leds aanpassen
-- silkscreen both sides (connectors)
-- on/off switch more to side
