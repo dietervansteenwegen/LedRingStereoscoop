@@ -322,6 +322,7 @@ int main(void) {
     StartWDT();
     
     /*Init completed*/
+    uint16_t Batt_Raw = 0;
     initialFillStruct(&StripDef);
     updateStrip();
     Uart1SendString("init complete\n");
@@ -362,7 +363,7 @@ int main(void) {
         
         if (Flag100ms == true){
             Flag100ms = false;
-//            Batt_Raw = sampleBatt();
+            Batt_Raw = sampleBatt();
 //            if (!Charging){
 //                LED_Red_SetHigh();
 //            }else{

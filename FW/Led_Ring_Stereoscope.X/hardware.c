@@ -21,6 +21,7 @@ void init_hardware( void ){
     initInterrupts();
     initTimer1();
     initTimer2();
+    initAdc();
     I2C1_InitModule();
     TLC59116_InitReset();
     led_start_routine();
@@ -55,15 +56,15 @@ void initPPS( void ){
     
     // Outputs are set by assigning a function number to the pin address
     // | RP | address          | function no
-    // | 23 | RPOR5bits.RP10R | 3  (U1Tx)
+    // | 10 | RPOR5bits.RP10R | 3  (U1Tx)
     
     // Inputs are set by setting the pin number to the input function address
     // | Func | address           | RP
     // | U1Rx | RPINR18bits.U1RXR | 11 (0x0B)
     
     //UART1    
-    RPOR5bits.RP10R = 0x0003;    // (U1Tx) RP23 pin gets function 3 (U1Tx)
-    RPINR18bits.U1RXR = 0x000B;    //(U1Rx) Function U1Rx to pin 0x26 (rp22)
+    RPOR5bits.RP10R = 0x0003;    // (U1Tx) RP10 pin gets function 3 (U1Tx)
+    RPINR18bits.U1RXR = 0x000B;    //(U1Rx) Function U1Rx to pin 0xB (RP11)
     
     __builtin_write_OSCCONL(OSCCON | 0x40); // Special command to lock PPS
 }
@@ -77,10 +78,10 @@ void initAdc (void){
     _TRISC1 = 1;
     
     AD1CON1bits.ADON = 0;
-    AD1CON1bits.ADSIDL = 0;     //Continues operation in idle mode
+    AD1CON1bits.ADSIDL = 0;     // Continues operation in idle mode
     AD1CON1bits.DMABM = 0;      // Not used since not using DMA
     AD1CON1bits.DMAEN = 0;      // No extended features
-    AD1CON1bits.MODE12 = 1;     // 12 bit operation
+    AD1CON1bits.MODE12 = 0;     // 12 bit operation
     AD1CON1bits.FORM = 0;       // Absolute decimal, unsigned, right justified
     AD1CON1bits.SSRC = 0;       // Clear SAMP bit to start conversion
     AD1CON1bits.ASAM = 0;       // Sample when SAMP is set manually
@@ -99,8 +100,8 @@ void initAdc (void){
     
     AD1CON3bits.ADRC = 0;       // Clock derived from system clock
     AD1CON3bits.PUMPEN = 0;     // Charge pump is disabled
-    AD1CON3bits.SAMC = 0;       // Auto sample is 0Tad (not used)
-    AD1CON3bits.ADCS = 0b10;    // Tad = 4xTcy
+    AD1CON3bits.SAMC = 0b11111; // Auto sample is 31 Tad
+    AD1CON3bits.ADCS = 0b1;     // Tad = 2xTcy
     
     //AD1CON4 is used to configure DMA
     //AD1CON5 is used for Threshold detect
@@ -212,17 +213,21 @@ void led_start_routine ( void ){
 }
 
 uint16_t sampleBatt( void ){
+    Nop();
 
-    uint8_t value = 0;      // for for loop while sampling
+    uint16_t value = 0;      // for for loop while sampling
+    
     AD1CON1bits.SAMP = 1;               // start sampling
-//    __delay_ms(100);      
-//    for(wait=0; wait < 1800; wait++){};    // give time to sample
+    __delay_ms(100);      
     AD1CON1bits.SAMP = 0;               // stop sampling, start conversion
 //    Uart1SendString("Converting\r");
 //    __delay_ms(200);      
-    while (!AD1CON1bits.DONE){}      // wait for conversion to be finished
+    while (!AD1CON1bits.DONE){};      // wait for conversion to be finished
 //    for(wait=0; wait < 180000; wait++){};    // give time to sample
     value = ADC1BUF0;
-    Uart1SendString("Conversion finished\r");
+    __C30_UART=1;
+#include <stdio.h>
+    printf("Value: %u\n", value);
     return value;
+    snprintf("Value: %u\n", value);
 }
