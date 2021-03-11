@@ -15,6 +15,16 @@
 - Replaced resitor divider to higher values (lower current draw)
 - ~Charging moved to more logical pin
 
+*** v0.2 -> v0.3
+- Buck regulator replaced by 3.3V LDO (only drives uC and CC led driver)
+- replaced switch by two push buttons and FET
+- replaced LED's with side view versions (visible from both sides)
+- removed DC input (uUSB should be enough)
+- added 100k on PGM ICSP line
+- added room for Rext on CC led driver
+- Removed reset pushputton (replaced by smd test point)
+- Layout much improved
+
 
 TODO (for v0.3): 
 - Check if pull up/down resistors on rotary encoder are already changed so that bodge wires aren't necessery anymore.
