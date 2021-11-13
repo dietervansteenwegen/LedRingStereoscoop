@@ -1,14 +1,11 @@
 /*
- * File:   hardware.c
- * Author: michielt
- *
- * Created on February 15, 2018, 7:27 PM
+ * Hardware initialisation and functions
  */
 
 #define  FCY 6000000UL    // Instruction cycle frequency, Hz - required for __delayXXX() to work
 #include <xc.h>
 #include "hardware.h"
-#include "i2c1.h"
+#include "I2C1.h"
 #include "TLC59116.h"
 #include <libpic30.h>          // For delay functions
 
@@ -28,6 +25,7 @@ void init_hardware( void ){
 }
 
 void initPins( void ){
+    /* Rotary encoder*/
     RotPush_SetDigIn();
     RotA_SetDig();
     RotA_SetDigIn();
@@ -39,15 +37,28 @@ void initPins( void ){
         
     /* LEDS */
     LED_Red_SetDigOut();
+    LED_Red_SetLow();
     LED_Green_SetDigOut();
+    LED_Green_SetLow();
     LED_Heartbeat_SetDigOut();
+    LED_Heartbeat_SetLow()
     
     /* CHARGING PIN */
     Charging_SetDig();
     Charging_SetDigIn();
     
+    /* Led Driver ~RESET*/
+    LED_DRV_RST_SetDig_Out();
+    LED_DRV_RST_SetHigh();
     
-
+    /* Shutdown button */
+    SHTDWN_BTN_SetDig();
+    SHTDWN_BTN_SetDigIn();
+    
+    /* Fet Gate */
+    FET_Gate_SetDigOut();
+    FET_Gate_HIGH();
+    
 }
 
 void initPPS( void ){
@@ -70,12 +81,12 @@ void initPPS( void ){
 }
 
 void initAdc (void){
-      /* Battery is connected through voltage divider (xxxR to batt, xxxR to GND) to pin RC1/AN11.
+      /* Battery is connected through voltage divider (xxxR to batt, xxxR to GND) to pin RB13/AN7.
         Pin is initialised in initPins function. */
     
     /* ADC input */
-    _ANSC1 = 1;
-    _TRISC1 = 1;
+    _ANSB13 = ANALOG;
+    _TRISB13 = INPUT_PIN;
     
     AD1CON1bits.ADON = 0;
     AD1CON1bits.ADSIDL = 0;     // Continues operation in idle mode
@@ -105,7 +116,7 @@ void initAdc (void){
     
     //AD1CON4 is used to configure DMA
     //AD1CON5 is used for Threshold detect
-    AD1CHS = 0xB;                // select AN11/PORTC1 as POS inp, Vss as neg for CHAN A
+    AD1CHS = 0x7;                // select AN7/PortB13 as POS inp, Vss as neg for CHAN A
 
     AD1CON1bits.ADON = 1;        // turn ADC ON
     
@@ -132,7 +143,7 @@ void initInterrupts (void) {
     /* Set priority for interrupts: Rx 1, Tx and Timers 2 */
     IPC3bits.U1TXIP = 2;  //    UTXI: U1TX - UART1 Transmitter    Priority: 2
     IPC2bits.U1RXIP = 1;  //    URXI: U1RX - UART1 Receiver     Priority: 1
-    IPC0bits.T1IP = 1;    //    TI: T1 - Timer1    Priority: 2
+    IPC0bits.T1IP = 1;    //    TI: T1 - Timer1    Priority: 1
 }
 
 void InitU1(void){
@@ -210,6 +221,7 @@ void led_start_routine ( void ){
         LED_Heartbeat_Toggle();
         __delay_ms(100);  
     }
+    /* End state: all LED's OFF */
 }
 
 uint16_t sampleBatt( void ){
@@ -220,14 +232,15 @@ uint16_t sampleBatt( void ){
     AD1CON1bits.SAMP = 1;               // start sampling
     __delay_ms(100);      
     AD1CON1bits.SAMP = 0;               // stop sampling, start conversion
-//    Uart1SendString("Converting\r");
-//    __delay_ms(200);      
+      
     while (!AD1CON1bits.DONE){};      // wait for conversion to be finished
-//    for(wait=0; wait < 180000; wait++){};    // give time to sample
+
     value = ADC1BUF0;
+    
+    /* Debug */
     __C30_UART=1;
-#include <stdio.h>
+    #include <stdio.h>
     printf("Value: %u\n", value);
+    
     return value;
-    snprintf("Value: %u\n", value);
 }

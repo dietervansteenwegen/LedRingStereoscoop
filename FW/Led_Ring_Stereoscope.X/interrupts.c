@@ -89,6 +89,6 @@ void __attribute__ ( ( interrupt, no_auto_psv ) ) _T2Interrupt (  ){
 
 void __attribute__ ( ( interrupt, no_auto_psv ) ) _ADC1Interrupt( void ){
     IFS0bits.AD1IF=0;
-    Uart1SendString("Interrupt\r");
+    Uart1SendString("Interrupt from ADC\r");
     
 }
