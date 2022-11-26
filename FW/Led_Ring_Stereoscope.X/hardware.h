@@ -94,7 +94,9 @@ void led_start_routine (void);
 
 #define FET_Gate                        _LATA10
 #define FET_Gate_LOW                    _LATA10 = 0
+#define FET_Gate_OPEN                   _LATA10 = 0
 #define FET_Gate_HIGH                   _LATA10 = 1
+#define FET_Gate_CLOSE                  _LATA10 = 1
 #define FET_Gate_SetDigOut()            _TRISA10 = OUTPUT_PIN
 
 #define StartWDT()              RCONbits.SWDTEN = 0x01;    // Start Software WDT (512ms for PRE = POSTscaler = 128)

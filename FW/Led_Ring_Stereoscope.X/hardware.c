@@ -25,6 +25,11 @@ void init_hardware( void ){
 }
 
 void initPins( void ){
+    
+    /* Fet Gate */
+    FET_Gate_SetDigOut();
+    FET_Gate_CLOSE(); // Let current flow/short switch
+    
     /* Rotary encoder*/
     RotPush_SetDigIn();
     RotA_SetDig();
@@ -55,9 +60,6 @@ void initPins( void ){
     SHTDWN_BTN_SetDig();
     SHTDWN_BTN_SetDigIn();
     
-    /* Fet Gate */
-    FET_Gate_SetDigOut();
-    FET_Gate_HIGH();
     
 }
 

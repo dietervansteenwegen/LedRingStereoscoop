@@ -1,9 +1,6 @@
 /*
- * Blank template for PIC24FJ128GB204, with:
- *      - serial port UART1
- *      - pwm heartbeat LED
- *      - Green and RED LED
- *      - TP1
+ * Ledring
+ * v2.0 (pcb 3.1) New power management, LED functions
  */
 
 #include "config.h"
